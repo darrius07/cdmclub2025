@@ -51,44 +51,42 @@
       position: relative;
       overflow-x: auto;
       min-height: 900px;
+      margin-top: 10px;
     }
     .bracket {
-      position: absolute;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
       display: flex;
       flex-direction: row;
       justify-content: space-between;
-      z-index: 2;
+      width: 100%;
       pointer-events: none;
     }
     .bracket-column {
       position: relative;
       width: 25%;
+      min-width: 220px;
       height: 100%;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 35px;
     }
     .bracket-title {
       font-weight: bold;
       font-size: 18px;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       color: #2466ea;
       text-shadow: 0 2px 12px #bdd1fa44;
       letter-spacing: 1px;
-      position: absolute;
-      left: 0; right: 0; top: 0;
-      z-index: 3;
-      pointer-events: auto;
+      width: 100%;
     }
     .bracket-match {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 180px;
+      width: 195px;
       background: #f2f7fd;
       border: 2.5px solid #cfe2ff;
       border-radius: 17px;
-      padding: 15px 10px 10px 10px;
+      padding: 13px 8px 8px 8px;
       min-height: 58px;
       box-shadow: 0 4px 18px #a7b3ff24;
       text-align: center;
@@ -159,13 +157,34 @@
     .rank-list { margin: 10px 0 0 0; padding: 0; list-style: none; display: flex; gap: 10px; }
     .rank-list li { font-weight: bold; font-size: 15px; color: #2466ea; }
     .match-num { font-size: 13px; color: #8ab0ff; margin-bottom: 1px;}
-    @media (max-width: 1100px) {
-      .container { padding: 0; }
-      .bracket-area { min-height: 700px; }
-      .bracket-column { width: 25%; }
-    }
     .confetti-canvas {
       position: fixed; pointer-events: none; left:0;top:0;width:100vw;height:100vh;z-index:9999;
+    }
+    /* Responsive mobile : bracket vertical */
+    @media (max-width: 700px) {
+      .bracket {
+        flex-direction: column;
+        width: 100%;
+        align-items: stretch;
+      }
+      .bracket-column {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 25px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 18px;
+      }
+      .bracket-title {
+        position: static;
+        margin-bottom: 8px;
+      }
+      .bracket-match {
+        width: 98%;
+        min-width: 0;
+        margin: 0 auto 10px auto;
+        font-size: 15px;
+      }
     }
   </style>
 </head>
@@ -177,7 +196,16 @@
   <div id="app"></div>
 </div>
 <script>
-const GROUPS = { A: ["Palmeiras","FC Porto","Al Ahly","Inter Miami"], B: ["Paris Saint‑Germain","Atlético Madrid","Botafogo","Seattle Sounders FC"], C: ["Bayern Munich","Auckland City","Boca Juniors","Benfica"], D: ["Flamengo","Espérance de Tunis","Chelsea","Los Angeles FC"], E: ["River Plate","Urawa Red Diamonds","CF Monterrey","Inter Milan"], F: ["Fluminense","Borussia Dortmund","Ulsan HD","Mamelodi Sundowns"], G: ["Manchester City","Wydad AC","Al Ain","Juventus"], H: ["Real Madrid","Al‑Hilal","Pachuca","RB Salzburg"] };
+const GROUPS = { 
+  A: ["Palmeiras","FC Porto","Al Ahly","Inter Miami"], 
+  B: ["PSG","Atlético Madrid","Botafogo","Seattle Sounders FC"], 
+  C: ["Bayern Munich","Auckland City","Boca Juniors","Benfica"], 
+  D: ["Flamengo","Espérance de Tunis","Chelsea","Los Angeles FC"], 
+  E: ["River Plate","Urawa Red Diamonds","CF Monterrey","Inter Milan"], 
+  F: ["Fluminense","Borussia Dortmund","Ulsan HD","Mamelodi Sundowns"], 
+  G: ["Manchester City","Wydad AC","Al Ain","Juventus"], 
+  H: ["Real Madrid","Al‑Hilal","Pachuca","RB Salzburg"]
+};
 
 const MATCH_MAP = {
   49: {a: ['A', 0], b: ['B', 1]}, 50: {a: ['C', 0], b: ['D', 1]}, 51: {a: ['B', 0], b: ['A', 1]}, 52: {a: ['D', 0], b: ['C', 1]},
@@ -245,46 +273,29 @@ function renderBracket() {
   area.className = "bracket-area";
   area.style.position = "relative";
 
-  // Calcul dynamique de la hauteur
-  const blocH = 85, spacing = 45;
-  const rounds = roundMatches.length;
+  // Positions verticales desktop : espacées dans la colonne
   const nb8e = roundMatches[0].length;
-  const totalHeight = nb8e * blocH + (nb8e-1)*spacing + 80;
+  const totalHeight = nb8e * 100 + 80;
   area.style.height = totalHeight + "px";
 
-  // Calcul des positions
-  let matchPos = [[],[],[],[]];
-  // 8e de finale
-  for (let i=0; i<8; i++) {
-    matchPos[0][i] = { x: 0, y: 60 + i * (blocH + spacing) };
-  }
-  // Phases suivantes
-  for (let r=1; r<rounds; r++) {
-    for (let i=0; i<roundMatches[r].length; i++) {
-      let idx1 = i*2, idx2 = i*2+1;
-      matchPos[r][i] = {
-        x: r,
-        y: (matchPos[r-1][idx1].y + matchPos[r-1][idx2].y)/2
-      };
-    }
-  }
+  const rounds = roundMatches.length;
 
   // Création du bracket
   const bracketDiv = document.createElement('div');
   bracketDiv.className = 'bracket';
-  bracketDiv.style.height = area.style.height;
   for (let c=0; c<rounds; c++) {
     const col = document.createElement('div');
     col.className = 'bracket-column';
+    const colTitle = document.createElement('div');
+    colTitle.className = 'bracket-title';
+    colTitle.innerText = roundNames[c];
+    col.appendChild(colTitle);
     for (let r=0; r<roundMatches[c].length; r++) {
       let mNum = roundMatches[c][r];
       let teams = getTeams(mNum);
       let w = state.matchWinners[mNum];
       const mbox = document.createElement('div');
       mbox.className = 'bracket-match';
-      mbox.style.top = (matchPos[c][r].y) + "px";
-      mbox.setAttribute('data-match', mNum);
-      mbox.id = `match_${c}_${r}`;
       mbox.innerHTML = `
         <div class="match-num">Match ${mNum}</div>
         <div class="bracket-team${w===teams[0]?" winner":""}" tabindex="0" onclick="window.selectTeamBracket(${mNum},0,${c})">${teams[0]||""}</div>
@@ -292,13 +303,6 @@ function renderBracket() {
       `;
       col.appendChild(mbox);
     }
-    // Titre au-dessus
-    const colTitle = document.createElement('div');
-    colTitle.className = 'bracket-title';
-    colTitle.innerText = roundNames[c];
-    colTitle.style.top = "15px";
-    colTitle.style.width = "100%";
-    col.appendChild(colTitle);
     bracketDiv.appendChild(col);
   }
   area.appendChild(bracketDiv);
